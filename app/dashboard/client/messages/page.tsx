@@ -1,197 +1,251 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { MessageSquare, Send, Search } from "lucide-react"
-
-const conversations = [
-  {
-    id: 1,
-    name: "Abeba Tesfaye",
-    role: "Lawyer",
-    avatar: "AT",
-    lastMessage: "I have submitted the final custody agreement for your review.",
-    time: "2h ago",
-    unread: true,
-    messageCount: 8,
-    status: "online",
-    messages: [
-      { sender: "Abeba Tesfaye", text: "Good morning! How are you today?", time: "10:30 AM" },
-      { sender: "You", text: "Hi Abeba, I'm doing well. Have you made progress on the custody agreement?", time: "10:45 AM" },
-      { sender: "Abeba Tesfaye", text: "Yes, I have submitted the final custody agreement for your review.", time: "2h ago" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Dawit Mengistu",
-    role: "Lawyer",
-    avatar: "DM",
-    lastMessage: "Let's schedule a call to discuss the partnership terms.",
-    time: "5h ago",
-    unread: true,
-    messageCount: 12,
-    status: "offline",
-    messages: [],
-  },
-  {
-    id: 3,
-    name: "Solomon Bekele",
-    role: "Lawyer",
-    avatar: "SB",
-    lastMessage: "The land survey results are in. Everything looks good.",
-    time: "1d ago",
-    unread: false,
-    messageCount: 15,
-    status: "offline",
-    messages: [],
-  },
-]
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { MessageSquare, Send, Search, Video } from "lucide-react"
+import Link from "next/link"
 
 export default function ClientMessagesPage() {
-  const [selectedConversation, setSelectedConversation] = useState(conversations[0])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [newMessage, setNewMessage] = useState("")
+  const [conversations, setConversations] = useState<any[]>([])
+  const [selectedConv, setSelectedConv] = useState<any>(null)
+  const [messages, setMessages] = useState<any[]>([])
+  const [message, setMessage] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
+  const [isVideoOpen, setIsVideoOpen] = useState(false)
 
-  const filteredConversations = conversations.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    fetchConversations()
+  }, [])
+
+  useEffect(() => {
+    if (selectedConv?.id) {
+      fetchMessages(selectedConv.id)
+    }
+  }, [selectedConv?.id])
+
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch("/api/messages", { credentials: "include" })
+      if (res.ok) {
+        const data = await res.json()
+        setConversations(data.conversations || [])
+        if (data.conversations?.length > 0 && !selectedConv) {
+          setSelectedConv(data.conversations[0])
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch conversations:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchMessages = async (id: string) => {
+    try {
+      const res = await fetch(`/api/messages?conversationId=${id}`, { credentials: "include" })
+      if (res.ok) {
+        const data = await res.json()
+        setMessages(data.messages || [])
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !selectedConv) return
+
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          conversationId: selectedConv.id,
+          message: message,
+        }),
+      })
+
+      if (res.ok) {
+        setMessage("")
+        fetchMessages(selectedConv.id)
+        fetchConversations()
+      }
+    } catch (err) {
+      console.error("Failed to send message:", err)
+    }
+  }
+
+  const filteredConversations = conversations.filter(c =>
+    (c.lawyer_first + " " + c.lawyer_last).toLowerCase().includes(search.toLowerCase())
   )
 
   return (
     <DashboardShell role="client">
-      <div className="p-6 lg:p-8 h-[calc(100vh-6rem)] lg:h-[calc(100vh-4rem)]">
+      <div className="p-6 lg:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div>
-            <h1 className="text-2xl font-bold font-serif md:text-3xl">Messages</h1>
-            <p className="mt-1 text-muted-foreground">Chat with your lawyers about cases.</p>
-          </div>
+          <h1 className="text-2xl font-bold font-serif md:text-3xl">Messages</h1>
+          <p className="mt-1 text-muted-foreground">Communicate with your lawyers</p>
         </motion.div>
 
-        {/* Messages Layout */}
-        <div className="mt-8 flex gap-6 h-[calc(100%-6rem)]">
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
           {/* Conversations List */}
-          <div className="w-full sm:w-80 flex flex-col gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-secondary/50 border-border/50"
-              />
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex-1 overflow-y-auto flex flex-col gap-2"
-            >
-              {filteredConversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => setSelectedConversation(conv)}
-                  className={`text-left flex items-start gap-3 rounded-xl border p-3 transition-all ${
-                    selectedConversation.id === conv.id
-                      ? "border-primary/50 bg-primary/10"
-                      : "border-border/50 bg-secondary/30 hover:border-primary/20 hover:bg-secondary/50"
-                  }`}
-                >
-                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
-                    {conv.avatar}
-                    {conv.status === "online" && (
-                      <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 border border-background" />
-                    )}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-1"
+          >
+            <Card className="border-border/50 h-full flex flex-col">
+              <CardHeader>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search conversations..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 overflow-y-auto">
+                {loading ? (
+                  <div className="h-32 bg-secondary/50 animate-pulse m-4 rounded-lg" />
+                ) : filteredConversations.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    <p>No conversations yet</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{conv.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
+                ) : (
+                  <div className="flex flex-col divide-y divide-border/50">
+                    {filteredConversations.map((conv) => (
+                      <button
+                        key={conv.id}
+                        onClick={() => setSelectedConv(conv)}
+                        className={`p-4 text-left transition-all hover:bg-secondary/50 ${selectedConv?.id === conv.id ? "bg-primary/10 border-l-2 border-primary" : ""
+                          }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-foreground">{conv.lawyer_first} {conv.lawyer_last}</p>
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {conv.message_count} messages
+                        </p>
+                      </button>
+                    ))}
                   </div>
-                  {conv.unread && (
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                      {conv.messageCount}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </motion.div>
-          </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Chat Area */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="hidden sm:flex flex-1 flex-col rounded-xl border border-border/50 bg-card overflow-hidden"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-2"
           >
-            {/* Chat Header */}
-            <div className="border-b border-border/50 p-4">
-              <div className="flex items-center gap-3">
-                <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
-                  {selectedConversation.avatar}
-                  {selectedConversation.status === "online" && (
-                    <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 border border-background" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{selectedConversation.name}</p>
-                  <p className="text-xs text-muted-foreground">{selectedConversation.status}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-              {selectedConversation.messages.length > 0 ? (
-                selectedConversation.messages.map((msg, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${msg.sender === "You" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`rounded-lg px-4 py-2 max-w-xs ${
-                        msg.sender === "You"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary/50 text-foreground"
-                      }`}
-                    >
-                      <p className="text-sm">{msg.text}</p>
-                      <p className="text-xs mt-1 opacity-70">{msg.time}</p>
+            {selectedConv ? (
+              <Card className="border-border/50 h-full flex flex-col">
+                <CardHeader className="border-b border-border/50 shrink-0">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <CardTitle>{selectedConv.lawyer_first} {selectedConv.lawyer_last}</CardTitle>
                     </div>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <p className="text-sm">No messages yet. Start a conversation!</p>
-                </div>
-              )}
-            </div>
+                    <div className="flex items-center gap-2">
+                      <Button onClick={() => setIsVideoOpen(true)} className="gap-2 bg-primary">
+                        <Video className="h-4 w-4" />
+                        Video Call
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
 
-            {/* Input */}
-            <div className="border-t border-border/50 p-4 gap-2 flex">
-              <Textarea
-                placeholder="Type your message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="min-h-10 resize-none bg-secondary/50 border-border/50"
-              />
-              <Button size="icon" className="shrink-0">
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+                <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {messages.length === 0 ? (
+                    <div className="text-center text-muted-foreground text-sm py-8">
+                      Start a conversation
+                    </div>
+                  ) : (
+                    messages.map((msg: any, i: number) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex ${msg.sender_id === selectedConv.client_id ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-xs px-4 py-2 rounded-lg ${msg.sender_id === selectedConv.client_id
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-foreground"
+                            }`}
+                        >
+                          <p className="text-sm">{msg.content}</p>
+                          <p className="text-[10px] opacity-70 mt-1">
+                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </CardContent>
+
+                <CardContent className="border-t border-border/50 p-4 shrink-0">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Type your message..."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          handleSendMessage()
+                        }
+                      }}
+                      className="resize-none min-h-[44px] bg-secondary/50"
+                      rows={1}
+                    />
+                    <Button onClick={handleSendMessage} size="icon" className="self-end" disabled={!message.trim()}>
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-border/50 flex items-center justify-center h-full">
+                <CardContent className="text-center">
+                  <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <p className="text-muted-foreground">Select a lawyer to start messaging</p>
+                </CardContent>
+              </Card>
+            )}
           </motion.div>
         </div>
       </div>
+
+      <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+        <DialogContent className="sm:max-w-4xl h-[80vh] p-0 overflow-hidden border-border/50 bg-background">
+          <DialogTitle className="sr-only">Video Meeting</DialogTitle>
+          <DialogDescription className="sr-only">WebRTC video chat interface via Jitsi</DialogDescription>
+          {isVideoOpen && selectedConv && (
+            <iframe
+              src={`https://meet.jit.si/lawbridge-chat-${selectedConv.id}`}
+              allow="camera; microphone; fullscreen; display-capture"
+              className="w-full h-full border-0"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardShell>
   )
 }
