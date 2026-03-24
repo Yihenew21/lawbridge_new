@@ -248,7 +248,7 @@ export default function CaseDetailsPage() {
                                 variant="outline"
                                 className="border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white"
                                 onClick={async () => {
-                                  if(window.confirm(`Are you sure you want to hire ${app.first_name} ${app.last_name}? This will lock the case and create a conversation.`)) {
+                                  if (window.confirm(`Are you sure you want to hire ${app.first_name} ${app.last_name}? This will lock the case and create a conversation.`)) {
                                     await fetch("/api/applications", {
                                       method: "PUT",
                                       headers: { "Content-Type": "application/json" },
@@ -265,7 +265,7 @@ export default function CaseDetailsPage() {
                                 variant="outline"
                                 className="border-destructive text-destructive hover:bg-destructive hover:text-white"
                                 onClick={async () => {
-                                  if(window.confirm("Reject this bid?")) {
+                                  if (window.confirm("Reject this bid?")) {
                                     await fetch("/api/applications", {
                                       method: "PUT",
                                       headers: { "Content-Type": "application/json" },
