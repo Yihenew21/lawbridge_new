@@ -1,18 +1,26 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Sparkles, LogOut, LayoutDashboard, User } from "lucide-react"
+import { Scale, Menu, X, Sparkles, LogOut, LayoutDashboard, User } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
 
-const navLinks = [
+const unauthenticatedLinks = [
   { label: "How It Works", href: "#how-it-works" },
   { label: "Services", href: "#services" },
   { label: "Lawyers", href: "#lawyers" },
+  { label: "Insights", href: "/insights" },
+  { label: "AI Assistant", href: "/assistant", highlight: true },
+]
+
+const authenticatedLinks = [
+  { label: "Home", href: "/" },
+  { label: "Browse Cases", href: "/cases" },
+  { label: "Lawyers", href: "/lawyers" },
+  { label: "Insights", href: "/insights" },
   { label: "AI Assistant", href: "/assistant", highlight: true },
 ]
 
@@ -51,16 +59,9 @@ export function Navbar() {
       >
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 ring-2 ring-primary/30 shadow-sm transition-transform duration-300 group-hover:scale-110">
-              <Image
-                src="/logo.png"
-                alt="LawBridge logo"
-                width={40}
-                height={40}
-                className="h-8 w-8 object-contain"
-                priority
-              />
-              <div className="absolute inset-0 rounded-lg bg-primary/15 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform duration-300 group-hover:scale-110">
+              <Scale className="h-5 w-5" />
+              <div className="absolute inset-0 rounded-lg bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
             <span className="text-xl font-bold tracking-tight font-serif text-foreground">
               LawBridge
@@ -68,7 +69,7 @@ export function Navbar() {
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
-            {navLinks.map((link) =>
+            {(isAuthenticated ? authenticatedLinks : unauthenticatedLinks).map((link) =>
               link.highlight ? (
                 <Link
                   key={link.href}
@@ -156,7 +157,7 @@ export function Navbar() {
             className="fixed inset-x-0 top-[73px] z-40 border-b border-border bg-background/95 backdrop-blur-xl p-6 md:hidden"
           >
             <div className="flex flex-col gap-2">
-              {navLinks.map((link) => (
+              {(isAuthenticated ? authenticatedLinks : unauthenticatedLinks).map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
