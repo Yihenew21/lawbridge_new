@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const inter = Inter({
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
         type: 'image/svg+xml',
       },
     ],
-    apple: '/logo.png',
+    apple: '/apple-icon.png',
   },
 }
 
@@ -57,6 +58,7 @@ export default function RootLayout({
           disableTransitionOnChange={false}
         >
           {children}
+          <Toaster position="bottom-right" richColors theme="system" />
         </ThemeProvider>
         <Analytics />
       </body>

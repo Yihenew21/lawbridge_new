@@ -22,6 +22,7 @@ import {
   Bell,
   Shield,
   ChevronDown,
+  BookOpen,
 } from "lucide-react"
 
 interface DashboardShellProps {
@@ -42,6 +43,7 @@ const lawyerLinks = [
   { icon: Briefcase, label: "My Services", href: "/dashboard/lawyer/services" },
   { icon: FileText, label: "Active Cases", href: "/dashboard/lawyer/cases" },
   { icon: MessageSquare, label: "Messages", href: "/dashboard/lawyer/messages", badge: 5 },
+  { icon: BookOpen, label: "Insights", href: "/dashboard/lawyer/insights" },
   { icon: CreditCard, label: "Earnings", href: "/dashboard/lawyer/earnings" },
   { icon: Shield, label: "Verification", href: "/dashboard/lawyer/verification" },
   { icon: Settings, label: "Settings", href: "/dashboard/lawyer/settings" },

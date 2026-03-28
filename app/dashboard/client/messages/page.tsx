@@ -131,8 +131,9 @@ export default function ClientMessagesPage() {
                       <button
                         key={conv.id}
                         onClick={() => setSelectedConv(conv)}
-                        className={`p-4 text-left transition-all hover:bg-secondary/50 ${selectedConv?.id === conv.id ? "bg-primary/10 border-l-2 border-primary" : ""
-                          }`}
+                        className={`p-4 text-left transition-all hover:bg-secondary/50 ${
+                          selectedConv?.id === conv.id ? "bg-primary/10 border-l-2 border-primary" : ""
+                        }`}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <p className="font-medium text-foreground">{conv.lawyer_first} {conv.lawyer_last}</p>
@@ -185,10 +186,11 @@ export default function ClientMessagesPage() {
                         className={`flex ${msg.sender_id === selectedConv.client_id ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-xs px-4 py-2 rounded-lg ${msg.sender_id === selectedConv.client_id
+                          className={`max-w-xs px-4 py-2 rounded-lg ${
+                            msg.sender_id === selectedConv.client_id
                               ? "bg-primary text-primary-foreground"
                               : "bg-secondary text-foreground"
-                            }`}
+                          }`}
                         >
                           <p className="text-sm">{msg.content}</p>
                           <p className="text-[10px] opacity-70 mt-1">
