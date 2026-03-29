@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { verifyToken } from "@/lib/auth"
 import { getDb } from "@/lib/db"
+import { verifyToken } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,37 +10,39 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await verifyToken(token)
-    if (!user || user.role !== "lawyer") {
+    if (!user || user.role !== "client") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const statusFilter = request.nextUrl.searchParams.get("status")
+    const searchParams = request.nextUrl.searchParams
+    const statusFilter = searchParams.get("status")
+
     const sql = getDb()
 
     let cases
     if (statusFilter) {
       cases = await sql`
-        SELECT c.*, ca.bid_amount, ca.status as application_status, ca.id as application_id
+        SELECT c.*, 
+          (SELECT COUNT(*) FROM case_applications WHERE case_id = c.id) as application_count
         FROM cases c
-        JOIN case_applications ca ON c.id = ca.case_id
-        WHERE ca.lawyer_id = ${user.id} AND ca.status = ${statusFilter}
+        WHERE c.client_id = ${user.id} AND c.status = ${statusFilter}
         ORDER BY c.created_at DESC
       `
     } else {
       cases = await sql`
-        SELECT c.*, ca.bid_amount, ca.status as application_status, ca.id as application_id
+        SELECT c.*, 
+          (SELECT COUNT(*) FROM case_applications WHERE case_id = c.id) as application_count
         FROM cases c
-        JOIN case_applications ca ON c.id = ca.case_id
-        WHERE ca.lawyer_id = ${user.id}
+        WHERE c.client_id = ${user.id}
         ORDER BY c.created_at DESC
       `
     }
 
     return NextResponse.json({ cases })
   } catch (error) {
-    console.error("Lawyer cases error:", error)
+    console.error("Client cases fetch error:", error)
     return NextResponse.json(
-      { error: "Failed to fetch cases" },
+      { error: "An error occurred" },
       { status: 500 }
     )
   }
