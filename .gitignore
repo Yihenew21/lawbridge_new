@@ -8,3 +8,9 @@ node_modules/
 .next/
 .env*.local
 .DS_Store
+
+# Editor
+.vscode/
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
