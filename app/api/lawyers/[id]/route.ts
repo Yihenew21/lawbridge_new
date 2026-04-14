@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
-const sql = neon(process.env.DATABASE_URL!)
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const sql = neon(process.env.DATABASE_URL!)
   try {
     const lawyerId = (await params).id
 

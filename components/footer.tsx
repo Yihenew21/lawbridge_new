@@ -1,5 +1,5 @@
-import Image from "next/image"
 import Link from "next/link"
+import { Scale } from "lucide-react"
 
 const footerLinks = {
   Platform: [
@@ -35,14 +35,8 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 ring-2 ring-primary/30 shadow-sm">
-                <Image
-                  src="/logo.png"
-                  alt="LawBridge logo"
-                  width={40}
-                  height={40}
-                  className="h-8 w-8 object-contain"
-                />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Scale className="h-5 w-5" />
               </div>
               <span className="text-xl font-bold tracking-tight font-serif text-foreground">
                 LawBridge
