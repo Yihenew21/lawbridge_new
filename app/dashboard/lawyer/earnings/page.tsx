@@ -7,7 +7,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, TrendingUp, DollarSign, Lock, Unlock, Download } from "lucide-react"
+import { Loader2, TrendingUp, DollarSign, Lock, Unlock, Download, Filter } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 
@@ -26,10 +26,19 @@ interface MonthlyEarning {
   amount: string
 }
 
+interface Transaction {
+  id: string
+  case: string
+  amount: string
+  status: string
+  date: string
+}
+
 export default function LawyerEarningsPage() {
   const router = useRouter()
   const [summary, setSummary] = useState<EarningsSummary | null>(null)
   const [monthlyEarnings, setMonthlyEarnings] = useState<MonthlyEarning[]>([])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -47,6 +56,8 @@ export default function LawyerEarningsPage() {
       if (res.ok) {
         setSummary(data.summary)
         setMonthlyEarnings(data.monthly_earnings)
+        // Mock transactions for now - replace with actual API data when available
+        setTransactions(data.transactions || [])
       } else {
         toast.error(data.error || "Failed to fetch earnings")
       }
@@ -73,9 +84,11 @@ export default function LawyerEarningsPage() {
   return (
     <DashboardShell role="lawyer">
       <div className="p-6 lg:p-8">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
           className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
@@ -245,6 +258,65 @@ export default function LawyerEarningsPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Transactions */}
+        {transactions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mt-8"
+          >
+            <Card className="border-border/50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Transactions</CardTitle>
+                    <CardDescription>Your recent transactions</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Filter className="h-3.5 w-3.5" />
+                    Filter
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="border-b border-border/50">
+                      <tr>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Case</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Amount</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactions.map((tx, i) => (
+                        <motion.tr
+                          key={tx.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.5 + i * 0.05 }}
+                          className="border-b border-border/50 hover:bg-secondary/30 transition-colors"
+                        >
+                          <td className="py-3 px-4">{tx.case}</td>
+                          <td className="py-3 px-4 font-medium text-primary">{tx.amount}</td>
+                          <td className="py-3 px-4">
+                            <Badge variant={tx.status === "Completed" ? "default" : "outline"} className="text-[10px]">
+                              {tx.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">{tx.date}</td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
     </DashboardShell>
   )
