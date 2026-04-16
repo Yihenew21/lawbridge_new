@@ -8,28 +8,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Plus, Search, Loader2, AlertCircle, Clock, CheckCircle2, XCircle, AlertTriangle } from "lucide-react"
-import Link from "next/link"
+import { Search, Loader2, AlertCircle, Clock, CheckCircle2, Lock, Star } from "lucide-react"
 import { toast } from "sonner"
 
-interface Payment {
+interface Transaction {
   id: string
   transaction_id: string
   amount: string
+  commission_amount: string
   lawyer_amount: string
   status: string
   case_description: string
-  lawyer_name: string
-  lawyer_email: string
+  client_name: string
+  client_email: string
   created_at: string
   verified_at: string | null
   released_at: string | null
-  rejection_reason: string | null
-  bank_name: string
-  account_number: string
   case_id: string | null
   case_title: string | null
   rating: number | null
+  rating_comment: string | null
 }
 
 const statusConfig = {
@@ -39,9 +37,9 @@ const statusConfig = {
     icon: Clock,
   },
   held_in_escrow: {
-    label: "Held in Escrow",
+    label: "Locked in Escrow",
     color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    icon: CheckCircle2,
+    icon: Lock,
   },
   released: {
     label: "Released",
@@ -51,36 +49,26 @@ const statusConfig = {
   disputed: {
     label: "Disputed",
     color: "bg-red-500/10 text-red-600 border-red-500/20",
-    icon: AlertTriangle,
-  },
-  rejected: {
-    label: "Rejected",
-    color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
-    icon: XCircle,
-  },
-  refunded: {
-    label: "Refunded",
-    color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-    icon: CheckCircle2,
+    icon: AlertCircle,
   },
 }
 
-export default function ClientPaymentsPage() {
+export default function LawyerPaymentsPage() {
   const router = useRouter()
-  const [payments, setPayments] = useState<Payment[]>([])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("")
 
   useEffect(() => {
-    fetchPayments()
+    fetchTransactions()
   }, [statusFilter])
 
-  const fetchPayments = async () => {
+  const fetchTransactions = async () => {
     try {
       const url = statusFilter
-        ? `/api/payments/client?status=${statusFilter}`
-        : "/api/payments/client"
+        ? `/api/payments/lawyer/transactions?status=${statusFilter}`
+        : "/api/payments/lawyer/transactions"
 
       const res = await fetch(url, {
         credentials: "include",
@@ -89,44 +77,44 @@ export default function ClientPaymentsPage() {
       const data = await res.json()
 
       if (res.ok) {
-        setPayments(data.payments)
+        setTransactions(data.transactions)
       } else {
-        toast.error(data.error || "Failed to fetch payments")
+        toast.error(data.error || "Failed to fetch transactions")
       }
     } catch (err) {
-      console.error("Error fetching payments:", err)
-      toast.error("Failed to fetch payments")
+      console.error("Error fetching transactions:", err)
+      toast.error("Failed to fetch transactions")
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredPayments = payments.filter((payment) =>
-    payment.lawyer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    payment.transaction_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    payment.case_description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTransactions = transactions.filter((tx) =>
+    tx.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    tx.transaction_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    tx.case_description.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const stats = [
     {
-      label: "Total Payments",
-      value: payments.length.toString(),
+      label: "Total Transactions",
+      value: transactions.length.toString(),
       trend: "All time",
     },
     {
-      label: "Pending",
-      value: payments.filter((p) => p.status === "pending_verification").length.toString(),
-      trend: "Awaiting verification",
+      label: "Locked",
+      value: transactions.filter((t) => t.status === "held_in_escrow").length.toString(),
+      trend: "In escrow",
     },
     {
-      label: "In Escrow",
-      value: payments.filter((p) => p.status === "held_in_escrow").length.toString(),
-      trend: "Active cases",
+      label: "Released",
+      value: transactions.filter((t) => t.status === "released").length.toString(),
+      trend: "Completed",
     },
   ]
 
   return (
-    <DashboardShell role="client">
+    <DashboardShell role="lawyer">
       <div className="p-6 lg:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -134,15 +122,9 @@ export default function ClientPaymentsPage() {
           className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <h1 className="text-2xl font-bold font-serif md:text-3xl">Payments</h1>
-            <p className="mt-1 text-muted-foreground">Track and manage your payment submissions</p>
+            <h1 className="text-2xl font-bold font-serif md:text-3xl">Payment Transactions</h1>
+            <p className="mt-1 text-muted-foreground">View all your payment transactions</p>
           </div>
-          <Link href="/payments/submit">
-            <Button className="rounded-full gap-2">
-              <Plus className="h-4 w-4" />
-              Submit Payment
-            </Button>
-          </Link>
         </motion.div>
 
         {/* Stats */}
@@ -170,7 +152,7 @@ export default function ClientPaymentsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by lawyer, transaction ID, or description..."
+              placeholder="Search by client, transaction ID, or description..."
               className="pl-10 bg-secondary/50 border-border/50"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -186,20 +168,12 @@ export default function ClientPaymentsPage() {
               All
             </Button>
             <Button
-              variant={statusFilter === "pending_verification" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter("pending_verification")}
-              className="rounded-full"
-            >
-              Pending
-            </Button>
-            <Button
               variant={statusFilter === "held_in_escrow" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("held_in_escrow")}
               className="rounded-full"
             >
-              In Escrow
+              Locked
             </Button>
             <Button
               variant={statusFilter === "released" ? "default" : "outline"}
@@ -212,7 +186,7 @@ export default function ClientPaymentsPage() {
           </div>
         </div>
 
-        {/* Payments List */}
+        {/* Transactions List */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -223,48 +197,42 @@ export default function ClientPaymentsPage() {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filteredPayments.length === 0 ? (
+          ) : filteredTransactions.length === 0 ? (
             <Card className="border-border/50">
               <CardContent className="py-12">
                 <div className="text-center">
                   <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No payments found</p>
-                  <Link href="/payments/submit">
-                    <Button className="mt-4 rounded-full">Submit Your First Payment</Button>
-                  </Link>
+                  <p className="text-muted-foreground">No transactions found</p>
                 </div>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 gap-4">
-              {filteredPayments.map((payment, i) => {
-                const statusInfo = statusConfig[payment.status as keyof typeof statusConfig]
+              {filteredTransactions.map((tx, i) => {
+                const statusInfo = statusConfig[tx.status as keyof typeof statusConfig]
                 const StatusIcon = statusInfo?.icon || Clock
 
                 return (
                   <motion.div
-                    key={payment.id}
+                    key={tx.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 + i * 0.05 }}
                   >
-                    <Card
-                      className="border-border/50 hover:border-primary/20 transition-all cursor-pointer"
-                      onClick={() => router.push(`/dashboard/client/payments/${payment.id}`)}
-                    >
+                    <Card className="border-border/50 hover:border-primary/20 transition-all">
                       <CardContent className="p-6">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start gap-3">
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-foreground truncate">
-                                  {payment.case_title || payment.case_description.substring(0, 50) + "..."}
+                                  {tx.case_title || tx.case_description.substring(0, 50) + "..."}
                                 </h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                  Lawyer: {payment.lawyer_name}
+                                  Client: {tx.client_name}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Transaction ID: {payment.transaction_id}
+                                  Transaction ID: {tx.transaction_id}
                                 </p>
                               </div>
                             </div>
@@ -275,31 +243,49 @@ export default function ClientPaymentsPage() {
                                 {statusInfo?.label}
                               </Badge>
                               <span className="text-xs text-muted-foreground">
-                                {new Date(payment.created_at).toLocaleDateString()}
+                                {new Date(tx.created_at).toLocaleDateString()}
                               </span>
+                              {tx.released_at && (
+                                <span className="text-xs text-green-600">
+                                  Released: {new Date(tx.released_at).toLocaleDateString()}
+                                </span>
+                              )}
                             </div>
 
-                            {payment.rejection_reason && (
-                              <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/20 p-3">
-                                <p className="text-xs text-red-600">
-                                  <strong>Rejection Reason:</strong> {payment.rejection_reason}
-                                </p>
+                            {tx.rating && (
+                              <div className="mt-3 flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`h-4 w-4 ${
+                                        star <= tx.rating!
+                                          ? "fill-amber-400 text-amber-400"
+                                          : "text-gray-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                {tx.rating_comment && (
+                                  <p className="text-xs text-muted-foreground">
+                                    "{tx.rating_comment}"
+                                  </p>
+                                )}
                               </div>
                             )}
                           </div>
 
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-primary">{parseFloat(payment.amount).toFixed(2)} ETB</p>
-                            {payment.status === "held_in_escrow" && (
-                              <div className="mt-2 flex flex-col gap-2">
-                                <Button size="sm" className="rounded-full">
-                                  Close Case
-                                </Button>
-                                <Button size="sm" variant="outline" className="rounded-full">
-                                  Cancel
-                                </Button>
-                              </div>
-                            )}
+                            <p className="text-xs text-muted-foreground">Total Amount</p>
+                            <p className="text-lg font-semibold text-foreground">
+                              {parseFloat(tx.amount).toFixed(2)} ETB
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Commission: {parseFloat(tx.commission_amount).toFixed(2)} ETB
+                            </p>
+                            <p className="text-sm font-bold text-primary mt-2">
+                              You receive: {parseFloat(tx.lawyer_amount).toFixed(2)} ETB
+                            </p>
                           </div>
                         </div>
                       </CardContent>
