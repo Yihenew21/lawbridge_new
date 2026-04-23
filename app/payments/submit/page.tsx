@@ -38,6 +38,24 @@ export default function PaymentSubmitPage() {
     case_description: "",
   })
 
+  // Get bank prefix based on selected bank
+  const getBankPrefix = (bankName: string): string => {
+    const name = bankName.toLowerCase()
+    if (name.includes("telebirr")) return "TB-"
+    if (name.includes("commercial") || name.includes("cbe")) return "CBE-"
+    if (name.includes("abyssinia") || name.includes("boa")) return "BOA-"
+    if (name.includes("awash")) return "AWA-"
+    if (name.includes("dashen")) return "DAS-"
+    if (name.includes("nib")) return "NIB-"
+    if (name.includes("wegagen")) return "WEG-"
+    if (name.includes("united")) return "UNI-"
+    if (name.includes("cooperative") || name.includes("coop")) return "COOP-"
+    if (name.includes("oromia")) return "OIB-"
+    return "OTH-" // Other banks
+  }
+
+  const selectedBankAccount = bankAccounts.find(acc => acc.id === selectedBank)
+
   useEffect(() => {
     fetchBankAccounts()
   }, [])
@@ -87,12 +105,17 @@ export default function PaymentSubmitPage() {
     setLoading(true)
 
     try {
+      // Add bank prefix to transaction ID
+      const bankPrefix = selectedBankAccount ? getBankPrefix(selectedBankAccount.bank_name) : ""
+      const fullTransactionId = bankPrefix + formData.transaction_id
+
       const res = await fetch("/api/payments/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           ...formData,
+          transaction_id: fullTransactionId,
           bank_account_id: selectedBank,
           amount: parseFloat(formData.amount),
         }),
@@ -284,14 +307,27 @@ export default function PaymentSubmitPage() {
                         <Label htmlFor="transaction_id" className="text-sm font-medium mb-2 block">
                           Transaction ID *
                         </Label>
-                        <Input
-                          id="transaction_id"
-                          placeholder="Bank transaction reference"
-                          className="h-11 bg-secondary/50 border-border/50"
-                          value={formData.transaction_id}
-                          onChange={(e) => updateField("transaction_id", e.target.value)}
-                          required
-                        />
+                        <div className="relative">
+                          {selectedBankAccount && (
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-mono text-muted-foreground pointer-events-none">
+                              {getBankPrefix(selectedBankAccount.bank_name)}
+                            </div>
+                          )}
+                          <Input
+                            id="transaction_id"
+                            placeholder={selectedBankAccount ? "Enter transaction number" : "Select bank first"}
+                            className={`h-11 bg-secondary/50 border-border/50 ${selectedBankAccount ? 'pl-16' : ''}`}
+                            value={formData.transaction_id}
+                            onChange={(e) => updateField("transaction_id", e.target.value)}
+                            disabled={!selectedBankAccount}
+                            required
+                          />
+                        </div>
+                        {selectedBankAccount && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Full ID: {getBankPrefix(selectedBankAccount.bank_name)}{formData.transaction_id || "..."}
+                          </p>
+                        )}
                       </div>
                     </div>
 

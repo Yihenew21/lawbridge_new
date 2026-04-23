@@ -7,7 +7,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, TrendingUp, DollarSign, Lock, Unlock, Download, Filter } from "lucide-react"
+import { Loader2, TrendingUp, DollarSign, Lock, Unlock, Filter } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 
@@ -102,10 +102,6 @@ export default function LawyerEarningsPage() {
                 Withdraw
               </Button>
             </Link>
-            <Button variant="outline" className="rounded-full gap-2">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
           </div>
         </motion.div>
 

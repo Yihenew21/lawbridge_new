@@ -46,6 +46,14 @@ export async function POST(request: NextRequest) {
 
     const sql = getDb()
 
+    // Get current commission rate from platform settings
+    const settingsResult = await sql`
+      SELECT value FROM platform_settings WHERE key = 'commission_rate'
+    `
+    const commissionRate = settingsResult.length > 0
+      ? parseFloat(settingsResult[0].value)
+      : 15.0
+
     // Check if transaction ID already exists
     const existingPayment = await sql`
       SELECT id FROM escrow_payments WHERE transaction_id = ${transaction_id} LIMIT 1
@@ -93,6 +101,7 @@ export async function POST(request: NextRequest) {
         bank_account_id,
         transaction_id,
         amount,
+        commission_rate,
         case_description,
         client_name,
         client_email,
@@ -106,6 +115,7 @@ export async function POST(request: NextRequest) {
         ${bank_account_id},
         ${transaction_id},
         ${amount},
+        ${commissionRate},
         ${case_description},
         ${user.first_name + ' ' + user.last_name},
         ${user.email},
@@ -115,6 +125,26 @@ export async function POST(request: NextRequest) {
         'pending_verification'
       )
       RETURNING id, transaction_id, amount, status, created_at
+    `
+
+    // Create a case for this payment
+    const caseResult = await sql`
+      INSERT INTO cases (
+        client_id,
+        payment_id,
+        title,
+        description,
+        category,
+        status
+      ) VALUES (
+        ${user.id},
+        ${result[0].id},
+        'Payment Case - ' || ${lawyer_name},
+        ${case_description},
+        'general',
+        'pending'
+      )
+      RETURNING id
     `
 
     // Create initial status history entry

@@ -30,6 +30,11 @@ interface Payment {
   case_id: string | null
   case_title: string | null
   rating: number | null
+  dispute_id: string | null
+  dispute_status: string | null
+  dispute_resolution: string | null
+  dispute_refund_amount: string | null
+  dispute_resolved_at: string | null
 }
 
 const statusConfig = {
@@ -48,6 +53,11 @@ const statusConfig = {
     color: "bg-green-500/10 text-green-600 border-green-500/20",
     icon: CheckCircle2,
   },
+  partial_refund: {
+    label: "Partial Refund",
+    color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    icon: CheckCircle2,
+  },
   disputed: {
     label: "Disputed",
     color: "bg-red-500/10 text-red-600 border-red-500/20",
@@ -59,8 +69,8 @@ const statusConfig = {
     icon: XCircle,
   },
   refunded: {
-    label: "Refunded",
-    color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    label: "Full Refund",
+    color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
     icon: CheckCircle2,
   },
 }
@@ -123,6 +133,14 @@ export default function ClientPaymentsPage() {
       value: payments.filter((p) => p.status === "held_in_escrow").length.toString(),
       trend: "Active cases",
     },
+    {
+      label: "Refunds",
+      value: payments.filter((p) =>
+        (p.status === "released" && p.dispute_resolution === "partial_refund") ||
+        (p.status === "refunded" && p.dispute_resolution === "full_refund")
+      ).length.toString(),
+      trend: "Received",
+    },
   ]
 
   return (
@@ -146,7 +164,7 @@ export default function ClientPaymentsPage() {
         </motion.div>
 
         {/* Stats */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -209,6 +227,14 @@ export default function ClientPaymentsPage() {
             >
               Released
             </Button>
+            <Button
+              variant={statusFilter === "disputed" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter("disputed")}
+              className="rounded-full"
+            >
+              Disputed
+            </Button>
           </div>
         </div>
 
@@ -238,7 +264,15 @@ export default function ClientPaymentsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {filteredPayments.map((payment, i) => {
-                const statusInfo = statusConfig[payment.status as keyof typeof statusConfig]
+                // Determine display status based on actual status and dispute resolution
+                let displayStatus = payment.status
+                if (payment.status === 'released' && payment.dispute_resolution === 'partial_refund') {
+                  displayStatus = 'partial_refund'
+                } else if (payment.status === 'refunded' && payment.dispute_resolution === 'full_refund') {
+                  displayStatus = 'refunded'
+                }
+
+                const statusInfo = statusConfig[displayStatus as keyof typeof statusConfig]
                 const StatusIcon = statusInfo?.icon || Clock
 
                 return (
@@ -284,6 +318,54 @@ export default function ClientPaymentsPage() {
                                 <p className="text-xs text-red-600">
                                   <strong>Rejection Reason:</strong> {payment.rejection_reason}
                                 </p>
+                              </div>
+                            )}
+
+                            {/* Dispute/Refund Information */}
+                            {payment.dispute_id && payment.dispute_resolved_at && (
+                              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                <p className="text-xs font-semibold text-blue-600 mb-2">
+                                  Dispute Resolved
+                                </p>
+                                {payment.dispute_resolution === 'partial_refund' && (
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-green-600 font-semibold">
+                                      ✓ Refund Received: {parseFloat(payment.dispute_refund_amount || '0').toFixed(2)} ETB
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Lawyer Received: {parseFloat(payment.lawyer_amount).toFixed(2)} ETB
+                                    </p>
+                                    {payment.dispute_admin_notes && (
+                                      <p className="text-xs text-blue-900 dark:text-blue-100 mt-2 pt-2 border-t border-blue-500/20">
+                                        {payment.dispute_admin_notes}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                                {payment.dispute_resolution === 'full_refund' && (
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-green-600 font-semibold">
+                                      ✓ Full Refund: {parseFloat(payment.amount).toFixed(2)} ETB
+                                    </p>
+                                    {payment.dispute_admin_notes && (
+                                      <p className="text-xs text-blue-900 dark:text-blue-100 mt-2 pt-2 border-t border-blue-500/20">
+                                        {payment.dispute_admin_notes}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                                {payment.dispute_resolution === 'release_to_lawyer' && (
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-muted-foreground">
+                                      Payment released to lawyer
+                                    </p>
+                                    {payment.dispute_admin_notes && (
+                                      <p className="text-xs text-blue-900 dark:text-blue-100 mt-2 pt-2 border-t border-blue-500/20">
+                                        {payment.dispute_admin_notes}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>

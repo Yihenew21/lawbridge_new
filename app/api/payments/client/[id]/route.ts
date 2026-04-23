@@ -86,7 +86,9 @@ export async function GET(
         status,
         created_at,
         resolved_at,
-        resolution_outcome
+        resolution_outcome,
+        admin_notes,
+        refund_amount
       FROM payment_disputes
       WHERE payment_id = ${id}
       ORDER BY created_at DESC

@@ -58,6 +58,8 @@ interface Dispute {
   created_at: string
   resolved_at: string | null
   resolution_outcome: string | null
+  admin_notes: string | null
+  refund_amount: string | null
 }
 
 const statusConfig = {
@@ -359,6 +361,41 @@ export default function PaymentDetailPage() {
                         <p className="text-xs text-muted-foreground">Submitted</p>
                         <p className="text-sm mt-1">{new Date(dispute.created_at).toLocaleString()}</p>
                       </div>
+                      {dispute.resolved_at && (
+                        <>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Resolved</p>
+                            <p className="text-sm mt-1">{new Date(dispute.resolved_at).toLocaleString()}</p>
+                          </div>
+                          {dispute.resolution_outcome && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Resolution</p>
+                              <Badge className="mt-1 capitalize">
+                                {dispute.resolution_outcome.replace(/_/g, " ")}
+                              </Badge>
+                            </div>
+                          )}
+                          {dispute.refund_amount && parseFloat(dispute.refund_amount) > 0 && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Refund Amount</p>
+                              <p className="text-lg font-bold text-green-600 mt-1">
+                                {parseFloat(dispute.refund_amount).toFixed(2)} ETB
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                (Commission excluded from refund)
+                              </p>
+                            </div>
+                          )}
+                          {dispute.admin_notes && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Admin Decision Notes</p>
+                              <div className="mt-1 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                <p className="text-sm text-blue-900 dark:text-blue-100">{dispute.admin_notes}</p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

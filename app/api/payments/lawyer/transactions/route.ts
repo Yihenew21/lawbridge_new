@@ -39,9 +39,17 @@ export async function GET(request: NextRequest) {
           c.id as case_id,
           c.title as case_title,
           c.rating,
-          c.rating_comment
+          c.rating_comment,
+          pd.id as dispute_id,
+          pd.status as dispute_status,
+          pd.reason as dispute_reason,
+          pd.admin_notes as dispute_admin_notes,
+          pd.resolution_outcome as dispute_resolution,
+          pd.refund_amount as dispute_refund_amount,
+          pd.resolved_at as dispute_resolved_at
         FROM escrow_payments ep
         LEFT JOIN cases c ON c.payment_id = ep.id
+        LEFT JOIN payment_disputes pd ON pd.payment_id = ep.id
         WHERE ep.lawyer_id = ${user.id} AND ep.status = ${statusFilter}
         ORDER BY ep.created_at DESC
       `
@@ -63,9 +71,17 @@ export async function GET(request: NextRequest) {
           c.id as case_id,
           c.title as case_title,
           c.rating,
-          c.rating_comment
+          c.rating_comment,
+          pd.id as dispute_id,
+          pd.status as dispute_status,
+          pd.reason as dispute_reason,
+          pd.admin_notes as dispute_admin_notes,
+          pd.resolution_outcome as dispute_resolution,
+          pd.refund_amount as dispute_refund_amount,
+          pd.resolved_at as dispute_resolved_at
         FROM escrow_payments ep
         LEFT JOIN cases c ON c.payment_id = ep.id
+        LEFT JOIN payment_disputes pd ON pd.payment_id = ep.id
         WHERE ep.lawyer_id = ${user.id}
         ORDER BY ep.created_at DESC
       `

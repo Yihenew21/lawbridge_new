@@ -28,6 +28,13 @@ interface Transaction {
   case_title: string | null
   rating: number | null
   rating_comment: string | null
+  dispute_id: string | null
+  dispute_status: string | null
+  dispute_reason: string | null
+  dispute_admin_notes: string | null
+  dispute_resolution: string | null
+  dispute_refund_amount: string | null
+  dispute_resolved_at: string | null
 }
 
 const statusConfig = {
@@ -46,9 +53,19 @@ const statusConfig = {
     color: "bg-green-500/10 text-green-600 border-green-500/20",
     icon: CheckCircle2,
   },
+  released_partial: {
+    label: "Partial Release",
+    color: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+    icon: CheckCircle2,
+  },
   disputed: {
     label: "Disputed",
     color: "bg-red-500/10 text-red-600 border-red-500/20",
+    icon: AlertCircle,
+  },
+  refunded: {
+    label: "Refunded",
+    color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
     icon: AlertCircle,
   },
 }
@@ -89,11 +106,27 @@ export default function LawyerPaymentsPage() {
     }
   }
 
-  const filteredTransactions = transactions.filter((tx) =>
-    tx.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tx.transaction_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tx.case_description.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredTransactions = transactions.filter((tx) => {
+    // Text search filter
+    const matchesSearch = tx.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tx.transaction_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tx.case_description.toLowerCase().includes(searchQuery.toLowerCase())
+
+    if (!matchesSearch) return false
+
+    // Status filter
+    if (!statusFilter) return true
+
+    if (statusFilter === "partial_refund") {
+      return tx.status === "released" && tx.dispute_resolution === "partial_refund"
+    }
+
+    if (statusFilter === "released") {
+      return tx.status === "released" && !tx.dispute_resolution
+    }
+
+    return tx.status === statusFilter
+  })
 
   const stats = [
     {
@@ -108,8 +141,13 @@ export default function LawyerPaymentsPage() {
     },
     {
       label: "Released",
-      value: transactions.filter((t) => t.status === "released").length.toString(),
+      value: transactions.filter((t) => t.status === "released" && !t.dispute_resolution).length.toString(),
       trend: "Completed",
+    },
+    {
+      label: "Partial Release",
+      value: transactions.filter((t) => t.status === "released" && t.dispute_resolution === "partial_refund").length.toString(),
+      trend: "After dispute",
     },
   ]
 
@@ -128,7 +166,7 @@ export default function LawyerPaymentsPage() {
         </motion.div>
 
         {/* Stats */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -183,6 +221,14 @@ export default function LawyerPaymentsPage() {
             >
               Released
             </Button>
+            <Button
+              variant={statusFilter === "partial_refund" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter("partial_refund")}
+              className="rounded-full"
+            >
+              Partial Release
+            </Button>
           </div>
         </div>
 
@@ -209,7 +255,13 @@ export default function LawyerPaymentsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {filteredTransactions.map((tx, i) => {
-                const statusInfo = statusConfig[tx.status as keyof typeof statusConfig]
+                // Determine display status based on actual status and dispute resolution
+                let displayStatus = tx.status
+                if (tx.status === 'released' && tx.dispute_resolution === 'partial_refund') {
+                  displayStatus = 'released_partial'
+                }
+
+                const statusInfo = statusConfig[displayStatus as keyof typeof statusConfig]
                 const StatusIcon = statusInfo?.icon || Clock
 
                 return (
@@ -270,6 +322,53 @@ export default function LawyerPaymentsPage() {
                                   <p className="text-xs text-muted-foreground">
                                     "{tx.rating_comment}"
                                   </p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Dispute Information */}
+                            {tx.dispute_id && (
+                              <div className={`mt-3 p-3 rounded-lg ${
+                                tx.dispute_status === 'resolved_refund' || tx.dispute_status === 'resolved_release'
+                                  ? 'bg-blue-500/10 border border-blue-500/20'
+                                  : 'bg-red-500/10 border border-red-500/20'
+                              }`}>
+                                <p className={`text-xs font-semibold mb-1 ${
+                                  tx.dispute_status === 'resolved_refund' || tx.dispute_status === 'resolved_release'
+                                    ? 'text-blue-600'
+                                    : 'text-red-600'
+                                }`}>
+                                  Dispute: {tx.dispute_status?.replace(/_/g, " ").toUpperCase()}
+                                </p>
+                                {tx.dispute_resolved_at && (
+                                  <div className="mt-2 p-2 bg-white/50 dark:bg-black/20 border border-blue-500/20 rounded">
+                                    <p className="text-xs font-medium text-blue-600 mb-1">Admin Decision:</p>
+                                    {tx.dispute_admin_notes && (
+                                      <p className="text-xs text-blue-900 dark:text-blue-100 mb-2">
+                                        {tx.dispute_admin_notes}
+                                      </p>
+                                    )}
+                                    {tx.dispute_resolution && (
+                                      <p className="text-xs text-blue-600 mt-1">
+                                        Resolution: <span className="font-semibold">{tx.dispute_resolution.replace(/_/g, " ")}</span>
+                                      </p>
+                                    )}
+                                    {tx.dispute_resolution === 'partial_refund' && (
+                                      <div className="mt-2 pt-2 border-t border-blue-500/20">
+                                        <p className="text-xs text-muted-foreground">
+                                          Client Refund: {parseFloat(tx.dispute_refund_amount || '0').toFixed(2)} ETB
+                                        </p>
+                                        <p className="text-xs font-semibold text-green-600 mt-1">
+                                          You Received: {parseFloat(tx.lawyer_amount).toFixed(2)} ETB ✓
+                                        </p>
+                                      </div>
+                                    )}
+                                    {tx.dispute_resolution === 'full_refund' && (
+                                      <p className="text-xs text-red-600 mt-1">
+                                        Full Refund: {parseFloat(tx.dispute_refund_amount || '0').toFixed(2)} ETB
+                                      </p>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             )}
