@@ -189,9 +189,9 @@ export default function ClientCasesPage() {
                                 View
                               </Button>
                             </Link>
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
+                            <Button
+                              variant="destructive"
+                              size="sm"
                               className="gap-2"
                               onClick={(e) => handleDelete(e, c.id)}
                             >

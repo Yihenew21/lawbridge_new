@@ -120,4 +120,7 @@ google-credentials.json
 # ─────────────────────────────────────────
 __v0_runtime_loader.js
 __v0_devtools.tsx
+# v0 runtime files
+__v0_runtime_loader.js
+__v0_devtools.tsx
 __v0_jsx-dev-runtime.ts

@@ -146,10 +146,10 @@ export default function ClientPaymentsPage() {
   return (
     <DashboardShell role="client">
       <div className="p-6 lg:p-8">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
             <h1 className="text-2xl font-bold font-serif md:text-3xl">Payments</h1>
@@ -242,7 +242,7 @@ export default function ClientPaymentsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.25 }}
           className="mt-8"
         >
           {loading ? (
