@@ -1,2 +1,0 @@
-﻿app/cases/[id]/page.tsx(10,31): error TS2307: Cannot find module '@/components/rating-display' or its corresponding type declarations.
-app/cases/[id]/page.tsx(11,28): error TS2307: Cannot find module '@/components/rating-form' or its corresponding type declarations.
