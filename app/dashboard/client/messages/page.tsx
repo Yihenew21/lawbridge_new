@@ -174,9 +174,9 @@ export default function ClientMessagesPage() {
 
                 <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
                   {messages.length === 0 ? (
-                     <div className="text-center text-muted-foreground text-sm py-8">
-                       Start a conversation
-                     </div>
+                    <div className="text-center text-muted-foreground text-sm py-8">
+                      Start a conversation
+                    </div>
                   ) : (
                     messages.map((msg: any, i: number) => (
                       <motion.div
@@ -194,7 +194,7 @@ export default function ClientMessagesPage() {
                         >
                           <p className="text-sm">{msg.content}</p>
                           <p className="text-[10px] opacity-70 mt-1">
-                            {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </motion.div>
@@ -240,8 +240,8 @@ export default function ClientMessagesPage() {
           <DialogTitle className="sr-only">Video Meeting</DialogTitle>
           <DialogDescription className="sr-only">WebRTC video chat interface via Jitsi</DialogDescription>
           {isVideoOpen && selectedConv && (
-            <iframe 
-              src={`https://meet.jit.si/lawbridge-chat-${selectedConv.id}`} 
+            <iframe
+              src={`https://meet.jit.si/lawbridge-chat-${selectedConv.id}`}
               allow="camera; microphone; fullscreen; display-capture"
               className="w-full h-full border-0"
             />

@@ -59,6 +59,7 @@ Desktop.ini
 # ─────────────────────────────────────────
 # Editor & IDE files
 # ─────────────────────────────────────────
+.claude/
 .vscode/
 .idea/
 *.swp
@@ -117,6 +118,9 @@ google-credentials.json
 # ─────────────────────────────────────────
 # v0 runtime files (auto-generated)
 # ─────────────────────────────────────────
+__v0_runtime_loader.js
+__v0_devtools.tsx
+# v0 runtime files
 __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
