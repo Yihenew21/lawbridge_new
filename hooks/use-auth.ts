@@ -10,6 +10,9 @@ export interface AuthUser {
   role: "client" | "lawyer" | "student"
   first_name: string
   last_name: string
+  avatar_url?: string | null
+  email_verified?: boolean
+  account_status?: string
 }
 
 const fetcher = async (url: string) => {
@@ -43,6 +46,16 @@ export function useAuth() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || "Login failed")
+
+      // Check if 2FA is required
+      if (json.requires2FA) {
+        return {
+          requires2FA: true,
+          userId: json.userId,
+          email: json.email,
+        }
+      }
+
       await mutate({ user: json.user }, false)
       return json.user as AuthUser
     },
