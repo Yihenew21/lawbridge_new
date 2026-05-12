@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+import { Navbar } from "@/components/Navbar"
+import { Footer } from "@/components/Footer"
 import {
   Select,
   SelectContent,
