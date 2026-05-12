@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { verifyToken } from "@/lib/auth"
-import { verifyTOTP } from "speakeasy"
+import speakeasy from "speakeasy"
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,17 +15,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { totpSecret, code } = await request.json()
+    const { code } = await request.json()
 
-    if (!totpSecret || !code) {
+    if (!code) {
       return NextResponse.json(
-        { error: "TOTP secret and code are required" },
+        { error: "Verification code is required" },
         { status: 400 }
       )
     }
 
-    const verified = verifyTOTP({
-      secret: totpSecret,
+    const sql = getDb()
+
+    // Get user's 2FA secret
+    const users = await sql`
+      SELECT two_factor_secret FROM users WHERE id = ${user.id}
+    `
+
+    if (users.length === 0 || !users[0].two_factor_secret) {
+      return NextResponse.json(
+        { error: "2FA not set up" },
+        { status: 400 }
+      )
+    }
+
+    const verified = speakeasy.totp.verify({
+      secret: users[0].two_factor_secret,
       encoding: "base32",
       token: code,
       window: 2,
@@ -33,22 +47,20 @@ export async function POST(request: NextRequest) {
 
     if (!verified) {
       return NextResponse.json(
-        { error: "Invalid TOTP code" },
+        { error: "Invalid verification code" },
         { status: 400 }
       )
     }
 
-    const sql = getDb()
-
+    // Enable 2FA
     await sql`
-      UPDATE users 
-      SET two_factor_secret = ${totpSecret}, 
-          two_factor_enabled = true,
+      UPDATE users
+      SET two_factor_enabled = true,
           updated_at = NOW()
       WHERE id = ${user.id}
     `
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, message: "2FA enabled successfully" })
   } catch (error) {
     console.error("Error verifying 2FA:", error)
     return NextResponse.json(
