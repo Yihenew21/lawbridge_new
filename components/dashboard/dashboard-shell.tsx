@@ -23,6 +23,7 @@ import {
   Shield,
   ChevronDown,
   BookOpen,
+  Home,
 } from "lucide-react"
 
 interface DashboardShellProps {
@@ -31,6 +32,7 @@ interface DashboardShellProps {
 }
 
 const clientLinks = [
+  { icon: Home, label: "Home", href: "/" },
   { icon: LayoutDashboard, label: "Overview", href: "/dashboard/client" },
   { icon: FileText, label: "My Cases", href: "/dashboard/client/cases" },
   { icon: MessageSquare, label: "Messages", href: "/dashboard/client/messages", badge: 3 },
@@ -39,6 +41,7 @@ const clientLinks = [
 ]
 
 const lawyerLinks = [
+  { icon: Home, label: "Home", href: "/" },
   { icon: LayoutDashboard, label: "Overview", href: "/dashboard/lawyer" },
   { icon: Briefcase, label: "My Services", href: "/dashboard/lawyer/services" },
   { icon: FileText, label: "Active Cases", href: "/dashboard/lawyer/cases" },
@@ -107,9 +110,17 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
 
           <div className="border-t border-border/50 p-4">
             <div className="flex items-center gap-3 rounded-xl bg-secondary/50 p-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
-                {userName.charAt(0)}
-              </div>
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={userName}
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
+                  {userName.charAt(0)}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{userName}</p>
                 <p className="text-xs text-muted-foreground">{userRole}</p>

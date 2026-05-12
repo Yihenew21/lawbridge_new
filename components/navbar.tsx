@@ -105,9 +105,17 @@ export function Navbar() {
                   </Button>
                 </Link>
                 <div className="flex items-center gap-2 rounded-full bg-secondary/50 py-1 pl-1 pr-3">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                    {initials}
-                  </div>
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={`${user.first_name} ${user.last_name || ''}`}
+                      className="h-7 w-7 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                      {initials}
+                    </div>
+                  )}
                   <span className="text-sm font-medium text-foreground truncate max-w-[100px]">
                     {user.first_name}
                   </span>
@@ -180,9 +188,17 @@ export function Navbar() {
                 {isAuthenticated && user ? (
                   <>
                     <div className="flex items-center gap-3 rounded-lg bg-secondary/50 px-4 py-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                        {initials}
-                      </div>
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt={`${user.first_name} ${user.last_name || ''}`}
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                          {initials}
+                        </div>
+                      )}
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-foreground">{user.first_name} {user.last_name}</span>
                         <span className="text-xs text-muted-foreground capitalize">{user.role}</span>

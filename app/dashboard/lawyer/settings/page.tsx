@@ -10,11 +10,24 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Bell, Lock, User, LogOut, AlertCircle, Shield } from "lucide-react"
+import AvatarUpload from "@/components/AvatarUpload"
+import { useAuth } from "@/hooks/use-auth"
+import { toast } from "sonner"
 
 export default function LawyerSettingsPage() {
+  const { user, mutate } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [saving, setSaving] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordError, setPasswordError] = useState("")
@@ -23,6 +36,7 @@ export default function LawyerSettingsPage() {
   const [twoFactorError, setTwoFactorError] = useState("")
   const [twoFactorSetup, setTwoFactorSetup] = useState<any>(null)
   const [twoFactorCode, setTwoFactorCode] = useState("")
+  const [showDisable2FADialog, setShowDisable2FADialog] = useState(false)
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -47,30 +61,18 @@ export default function LawyerSettingsPage() {
   })
 
   useEffect(() => {
-    fetchUser()
-  }, [])
-
-  const fetchUser = async () => {
-    try {
-      const res = await fetch("/api/auth/me", { credentials: "include" })
-      if (res.ok) {
-        const data = await res.json()
-        setUser(data.user)
-        setFormData({
-          first_name: data.user.first_name || "",
-          last_name: data.user.last_name || "",
-          email: data.user.email || "",
-          phone: data.user.phone || "",
-          specialization: data.user.specialization || "",
-          bio: data.user.bio || "",
-        })
-      }
-    } catch (err) {
-      console.error("Failed to fetch user:", err)
-    } finally {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        specialization: user.specialization || "",
+        bio: user.bio || "",
+      })
       setLoading(false)
     }
-  }
+  }, [user])
 
   const handleSaveProfile = async () => {
     setSaving(true)
@@ -83,10 +85,14 @@ export default function LawyerSettingsPage() {
       })
 
       if (res.ok) {
-        fetchUser()
+        await mutate()
+        toast.success("Profile updated successfully!")
+      } else {
+        toast.error("Failed to update profile")
       }
     } catch (err) {
       console.error("Failed to save profile:", err)
+      toast.error("Failed to update profile")
     } finally {
       setSaving(false)
     }
@@ -185,6 +191,16 @@ export default function LawyerSettingsPage() {
                   <CardDescription>Update your professional profile</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Profile Picture */}
+                  <div className="flex justify-center py-4">
+                    <AvatarUpload
+                      currentAvatarUrl={user?.avatar_url}
+                      onUploadSuccess={async () => {
+                        await mutate();
+                      }}
+                    />
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="first_name">First Name</Label>
@@ -402,8 +418,15 @@ export default function LawyerSettingsPage() {
                           <div className="bg-secondary/50 p-4 rounded-lg">
                             <p className="text-sm font-medium mb-3">Scan this code with your authenticator app:</p>
                             <div className="bg-white p-3 rounded inline-block mb-3">
-                              {/* QR Code would be rendered here */}
-                              <p className="text-xs text-muted-foreground">QR Code Display</p>
+                              <img src={twoFactorSetup.qrCode} alt="2FA QR Code" className="w-48 h-48" />
+                            </div>
+                            <div className="mt-3">
+                              <p className="text-xs font-medium mb-2">Backup Codes (save these securely):</p>
+                              <div className="bg-background p-3 rounded text-xs font-mono space-y-1">
+                                {twoFactorSetup.backupCodes?.map((code: string, i: number) => (
+                                  <div key={i}>{code}</div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                           <div>
@@ -414,11 +437,12 @@ export default function LawyerSettingsPage() {
                               onChange={(e) => setTwoFactorCode(e.target.value)}
                               placeholder="000000"
                               maxLength={6}
-                              className="mt-2"
+                              className="mt-2 text-center text-2xl tracking-widest text-foreground"
                             />
                           </div>
-                          <Button 
+                          <Button
                             onClick={async () => {
+                              setTwoFactorError('')
                               try {
                                 const res = await fetch('/api/auth/2fa/verify', {
                                   method: 'POST',
@@ -426,10 +450,14 @@ export default function LawyerSettingsPage() {
                                   credentials: 'include',
                                   body: JSON.stringify({ code: twoFactorCode })
                                 })
+                                const data = await res.json()
                                 if (res.ok) {
                                   setTwoFactorSetup(null)
                                   setTwoFactorCode('')
-                                  fetchUser()
+                                  await mutate()
+                                  toast.success('2FA enabled successfully!')
+                                } else {
+                                  setTwoFactorError(data.error || 'Failed to verify code')
                                 }
                               } catch (err) {
                                 setTwoFactorError('Failed to verify code')
@@ -447,13 +475,62 @@ export default function LawyerSettingsPage() {
                         <Shield className="h-4 w-4 text-emerald-500" />
                         <span className="text-sm text-emerald-700">Two-factor authentication is enabled</span>
                       </div>
-                      <Button variant="destructive" className="w-full">Disable 2FA</Button>
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        onClick={() => setShowDisable2FADialog(true)}
+                        disabled={twoFactorLoading}
+                      >
+                        {twoFactorLoading ? 'Disabling...' : 'Disable 2FA'}
+                      </Button>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </motion.div>
           </TabsContent>
+
+          {/* Disable 2FA Confirmation Dialog */}
+          <AlertDialog open={showDisable2FADialog} onOpenChange={setShowDisable2FADialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Disable Two-Factor Authentication?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to disable 2FA? This will make your account less secure.
+                  You can always enable it again later.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={async () => {
+                    setTwoFactorLoading(true)
+                    setTwoFactorError('')
+                    try {
+                      const res = await fetch('/api/auth/2fa/disable', {
+                        method: 'POST',
+                        credentials: 'include'
+                      })
+                      if (res.ok) {
+                        await mutate()
+                        toast.success('2FA disabled successfully')
+                      } else {
+                        const data = await res.json()
+                        setTwoFactorError(data.error || 'Failed to disable 2FA')
+                      }
+                    } catch (err) {
+                      setTwoFactorError('Failed to disable 2FA')
+                    } finally {
+                      setTwoFactorLoading(false)
+                    }
+                  }}
+                >
+                  Disable 2FA
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="space-y-6">
