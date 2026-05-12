@@ -26,7 +26,37 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ user: null }, { status: 401 })
     }
 
-    return NextResponse.json({ user })
+    // Get complete user details from database (not from JWT)
+    const users = await sql`
+      SELECT id, email, role, first_name, last_name, phone, specialization, bio,
+             avatar_url, email_verified, account_status, two_factor_enabled
+      FROM users
+      WHERE id = ${user.id}
+      LIMIT 1
+    `
+
+    if (users.length === 0) {
+      return NextResponse.json({ user: null }, { status: 401 })
+    }
+
+    const userData = users[0]
+
+    return NextResponse.json({
+      user: {
+        id: userData.id,
+        email: userData.email,
+        role: userData.role,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone: userData.phone,
+        specialization: userData.specialization,
+        bio: userData.bio,
+        avatar_url: userData.avatar_url,
+        email_verified: userData.email_verified || false,
+        account_status: userData.account_status || 'active',
+        two_factor_enabled: userData.two_factor_enabled || false,
+      }
+    })
   } catch (error) {
     console.error("Session check error:", error)
     return NextResponse.json({ user: null }, { status: 401 })
