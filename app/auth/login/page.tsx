@@ -37,9 +37,16 @@ function LoginForm() {
     setError("")
     try {
       console.log("[v0] Login attempt for:", email)
-      const user = await login(email, password)
-      console.log("[v0] Login success, user:", user)
-      const dest = redirectTo || (user.role === "lawyer" ? "/dashboard/lawyer" : user.role === "student" ? "/assistant" : "/dashboard/client")
+      const result = await login(email, password)
+      console.log("[v0] Login success, result:", result)
+
+      // Check if 2FA is required
+      if (result && 'requires2FA' in result && result.requires2FA) {
+        router.push(`/auth/verify-2fa?userId=${result.userId}&email=${encodeURIComponent(result.email)}`)
+        return
+      }
+
+      const dest = redirectTo || (result.role === "lawyer" ? "/dashboard/lawyer" : result.role === "student" ? "/assistant" : "/dashboard/client")
       console.log("[v0] Redirecting to:", dest)
       router.refresh()
       window.location.href = dest
