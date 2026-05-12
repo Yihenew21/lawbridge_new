@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { hashPassword, createToken, getUserByEmail } from "@/lib/auth"
+import { checkRateLimit, getRateLimitIdentifier, RATE_LIMITS } from "@/lib/rate-limit"
 
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const identifier = getRateLimitIdentifier(request);
+    const rateLimit = checkRateLimit(`register:${identifier}`, RATE_LIMITS.REGISTER);
+
+    if (!rateLimit.allowed) {
+      const resetIn = Math.ceil((rateLimit.resetTime - Date.now()) / 1000 / 60);
+      return NextResponse.json(
+        { error: `Too many registration attempts. Please try again in ${resetIn} minutes.` },
+        { status: 429 }
+      );
+    }
     const body = await request.json()
     const { email, password, first_name, last_name, role, phone, specialization, license_number, bio } = body
 
