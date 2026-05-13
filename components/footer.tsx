@@ -21,10 +21,10 @@ const footerLinks = {
     { label: "Dispute Resolution", href: "#" },
   ],
   Support: [
-    { label: "Help Center", href: "#" },
-    { label: "Contact Us", href: "#" },
-    { label: "FAQ", href: "#" },
-    { label: "Report Issue", href: "#" },
+    { label: "Help Center", href: "/support/help" },
+    { label: "Contact Us", href: "/support/contact" },
+    { label: "FAQ", href: "/support/faq" },
+    { label: "Report Issue", href: "/support/report" },
   ],
 }
 
