@@ -6,24 +6,51 @@
  * 1. Use pdf-parse for text-based PDFs (fast, accurate)
  * 2. For scanned PDFs: Convert pages to images → Apply Tesseract OCR
  * 3. This matches best practices and provides better OCR accuracy
+ *
+ * NOTE: This module requires optional dependencies:
+ * - tesseract.js
+ * - pdf2pic
+ * - pdf-parse
+ * Install with: npm install tesseract.js pdf2pic pdf-parse
  */
 
-import { createWorker } from 'tesseract.js'
-import { fromPath } from 'pdf2pic'
 import { writeFile, unlink, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
-// Dynamic import for pdf-parse (CommonJS module compatibility with Next.js)
+// Optional dependencies - will be loaded dynamically if available
+let tesseractModule: any = null
+let pdf2picModule: any = null
 let pdfParseModule: any = null
+let dependenciesChecked = false
+let dependenciesAvailable = false
+
+async function checkDependencies() {
+  if (dependenciesChecked) {
+    return dependenciesAvailable
+  }
+
+  try {
+    tesseractModule = await import('tesseract.js')
+    pdf2picModule = await import('pdf2pic')
+    pdfParseModule = await import('pdf-parse')
+    dependenciesAvailable = true
+  } catch (error) {
+    console.warn('PDF processor dependencies not installed. PDF processing will be disabled.')
+    dependenciesAvailable = false
+  }
+
+  dependenciesChecked = true
+  return dependenciesAvailable
+}
 
 async function getPdfParse() {
-  if (!pdfParseModule) {
-    pdfParseModule = await import('pdf-parse')
-    return pdfParseModule.default || pdfParseModule
+  const available = await checkDependencies()
+  if (!available || !pdfParseModule) {
+    throw new Error('PDF processing dependencies not installed. Run: npm install tesseract.js pdf2pic pdf-parse')
   }
-  return pdfParseModule
+  return pdfParseModule.default || pdfParseModule
 }
 
 /**
@@ -45,6 +72,12 @@ export async function extractTextFromPDF(
   const { ocrThreshold = 100, maxPages = 1000, onProgress } = options
 
   try {
+    // Check if dependencies are available
+    const available = await checkDependencies()
+    if (!available) {
+      throw new Error('PDF processing dependencies not installed')
+    }
+
     // Step 1: Try extracting text with pdf-parse
     const pdfParse = await getPdfParse()
     const data = await pdfParse(buffer)
@@ -104,6 +137,12 @@ async function extractTextFromScannedPDF(
   pageCount: number,
   onProgress?: (progress: { page: number; total: number; status: string }) => void
 ): Promise<string> {
+  // Check if OCR dependencies are available
+  const available = await checkDependencies()
+  if (!available || !tesseractModule || !pdf2picModule) {
+    throw new Error('OCR dependencies (tesseract.js, pdf2pic) not installed. Cannot process scanned PDFs.')
+  }
+
   const tempDir = join(tmpdir(), `lawbridge-pdf-${Date.now()}`)
   const tempPdfPath = join(tempDir, 'input.pdf')
 
@@ -117,9 +156,11 @@ async function extractTextFromScannedPDF(
     await writeFile(tempPdfPath, buffer)
 
     // Initialize Tesseract worker
+    const { createWorker } = tesseractModule
     const worker = await createWorker('eng')
 
     // Configure pdf2pic converter
+    const { fromPath } = pdf2picModule
     const converter = fromPath(tempPdfPath, {
       density: 300, // DPI - higher = better quality but slower
       saveFilename: 'page',
