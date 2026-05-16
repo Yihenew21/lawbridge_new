@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -35,7 +35,7 @@ const clientLinks = [
   { icon: Home, label: "Home", href: "/" },
   { icon: LayoutDashboard, label: "Overview", href: "/dashboard/client" },
   { icon: FileText, label: "My Cases", href: "/dashboard/client/cases" },
-  { icon: MessageSquare, label: "Messages", href: "/dashboard/client/messages", badge: 3 },
+  { icon: MessageSquare, label: "Messages", href: "/dashboard/client/messages" },
   { icon: CreditCard, label: "Payments", href: "/dashboard/client/payments" },
   { icon: Settings, label: "Settings", href: "/dashboard/client/settings" },
 ]
@@ -45,7 +45,7 @@ const lawyerLinks = [
   { icon: LayoutDashboard, label: "Overview", href: "/dashboard/lawyer" },
   { icon: Briefcase, label: "My Services", href: "/dashboard/lawyer/services" },
   { icon: FileText, label: "Active Cases", href: "/dashboard/lawyer/cases" },
-  { icon: MessageSquare, label: "Messages", href: "/dashboard/lawyer/messages", badge: 5 },
+  { icon: MessageSquare, label: "Messages", href: "/dashboard/lawyer/messages" },
   { icon: BookOpen, label: "Insights", href: "/dashboard/lawyer/insights" },
   { icon: CreditCard, label: "Earnings", href: "/dashboard/lawyer/earnings" },
   { icon: Shield, label: "Verification", href: "/dashboard/lawyer/verification" },
@@ -57,9 +57,37 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const router = useRouter()
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const links = role === "client" ? clientLinks : lawyerLinks
   const userName = user ? `${user.first_name} ${user.last_name?.charAt(0) || ""}.` : role === "client" ? "Client" : "Lawyer"
   const userRole = user?.role === "lawyer" ? "Verified Lawyer" : user?.role === "student" ? "Student" : "Client"
+
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount()
+
+      // Poll for unread count every 30 seconds
+      const interval = setInterval(() => {
+        fetchUnreadCount()
+      }, 30000)
+
+      return () => clearInterval(interval)
+    }
+  }, [user])
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await fetch("/api/conversations/unread-count", {
+        credentials: "include"
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUnreadCount(data.unreadCount || 0)
+      }
+    } catch (error) {
+      console.error("Failed to fetch unread count:", error)
+    }
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -97,9 +125,9 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
                   >
                     <link.icon className="h-4.5 w-4.5" />
                     <span>{link.label}</span>
-                    {link.badge && (
+                    {link.label === "Messages" && unreadCount > 0 && (
                       <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                        {link.badge}
+                        {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
                   </Link>
@@ -201,9 +229,9 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
                         >
                           <link.icon className="h-4.5 w-4.5" />
                           <span>{link.label}</span>
-                          {link.badge && (
+                          {link.label === "Messages" && unreadCount > 0 && (
                             <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                              {link.badge}
+                              {unreadCount > 99 ? "99+" : unreadCount}
                             </span>
                           )}
                         </Link>
