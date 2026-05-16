@@ -10,7 +10,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const lawId = params.id
+    const { id: lawId } = await params
 
     if (!lawId) {
       return NextResponse.json(
